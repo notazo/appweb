@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notazo — Sabe cuánto necesitas para aprobar</title>
+<meta name="description" content="Calculadora de notas, simulador de exámenes y gestión académica para universitarios chilenos. Escala 1.0-7.0. Gratis.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#0a0a0c;
+  --surface:#141418;
+  --surface-2:#1c1c22;
+  --accent:#4ade80;
+  --accent-dim:#22c55e;
+  --accent-glow:rgba(74,222,128,.15);
+  --danger:#f87171;
+  --text:#f0f0f0;
+  --text-2:#a1a1aa;
+  --text-3:#71717a;
+  --radius:14px;
+  --font:'Outfit',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ═══ NOISE GRAIN ═══ */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;
+}
+
+/* ═══ HERO ═══ */
+.hero{
+  min-height:100dvh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:2rem 1.5rem;
+  position:relative;
+  text-align:center;
+}
+
+.hero::before{
+  content:'';position:absolute;
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(74,222,128,.08) 0%,transparent 70%);
+  top:-200px;left:50%;transform:translateX(-50%);
+  pointer-events:none;
+}
+
+.badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:var(--surface);
+  border:1px solid rgba(74,222,128,.2);
+  border-radius:100px;
+  padding:.4rem 1rem .4rem .6rem;
+  font-size:.8rem;color:var(--accent);
+  font-weight:500;
+  margin-bottom:2rem;
+  animation:fadeUp .6s ease both;
+}
+.badge-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  animation:pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.5;transform:scale(.8)}
+}
+
+.hero h1{
+  font-size:clamp(2.8rem,8vw,5.5rem);
+  font-weight:900;
+  line-height:1;
+  letter-spacing:-.03em;
+  margin-bottom:1rem;
+  animation:fadeUp .6s ease .1s both;
+}
+.hero h1 .accent{color:var(--accent)}
+
+.hero-sub{
+  font-size:clamp(1.05rem,2.5vw,1.3rem);
+  color:var(--text-2);
+  max-width:520px;
+  margin-bottom:.5rem;
+  animation:fadeUp .6s ease .2s both;
+  font-weight:400;
+}
+
+.hero-scale{
+  font-family:var(--mono);
+  font-size:.85rem;
+  color:var(--text-3);
+  margin-bottom:2.5rem;
+  animation:fadeUp .6s ease .25s both;
+}
+.hero-scale span{color:var(--accent);font-weight:700}
+
+/* ═══ COUNTDOWN ═══ */
+.countdown-wrap{
+  margin-bottom:2.5rem;
+  animation:fadeUp .6s ease .3s both;
+}
+.countdown-label{
+  font-size:.75rem;
+  text-transform:uppercase;
+  letter-spacing:.15em;
+  color:var(--danger);
+  font-weight:600;
+  margin-bottom:.75rem;
+}
+.countdown{
+  display:flex;gap:.6rem;
+  justify-content:center;
+}
+.countdown-item{
+  background:var(--surface);
+  border:1px solid rgba(248,113,113,.15);
+  border-radius:var(--radius);
+  padding:.6rem .8rem;
+  min-width:62px;
+  text-align:center;
+}
+.countdown-item .num{
+  font-family:var(--mono);
+  font-size:1.6rem;
+  font-weight:700;
+  color:var(--text);
+  display:block;
+  line-height:1.2;
+}
+.countdown-item .unit{
+  font-size:.65rem;
+  color:var(--text-3);
+  text-transform:uppercase;
+  letter-spacing:.1em;
+}
+
+/* ═══ CTA BUTTON ═══ */
+.cta-btn{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:var(--accent);
+  color:var(--bg);
+  font-family:var(--font);
+  font-size:1.05rem;
+  font-weight:700;
+  padding:.9rem 2rem;
+  border:none;border-radius:100px;
+  cursor:pointer;
+  transition:all .2s;
+  animation:fadeUp .6s ease .35s both;
+  text-decoration:none;
+}
+.cta-btn:hover{
+  background:var(--accent-dim);
+  transform:translateY(-2px);
+  box-shadow:0 8px 30px rgba(74,222,128,.25);
+}
+.cta-btn svg{width:18px;height:18px}
+
+/* ═══ FEATURES ═══ */
+.features{
+  padding:5rem 1.5rem;
+  max-width:900px;
+  margin:0 auto;
+}
+.features-title{
+  text-align:center;
+  font-size:clamp(1.5rem,4vw,2.2rem);
+  font-weight:800;
+  margin-bottom:.5rem;
+}
+.features-sub{
+  text-align:center;
+  color:var(--text-2);
+  margin-bottom:3rem;
+  font-size:.95rem;
+}
+
+.features-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:1rem;
+}
+.feature-card{
+  background:var(--surface);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--radius);
+  padding:1.5rem;
+  transition:border-color .3s,transform .3s;
+}
+.feature-card:hover{
+  border-color:rgba(74,222,128,.2);
+  transform:translateY(-3px);
+}
+.feature-icon{
+  width:40px;height:40px;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:1rem;
+  font-size:1.2rem;
+  background:var(--accent-glow);
+  color:var(--accent);
+}
+.feature-card h3{
+  font-size:1rem;font-weight:700;
+  margin-bottom:.4rem;
+}
+.feature-card p{
+  font-size:.85rem;
+  color:var(--text-2);
+  line-height:1.5;
+}
+
+/* ═══ HOW IT WORKS ═══ */
+.how{
+  padding:4rem 1.5rem 5rem;
+  max-width:600px;
+  margin:0 auto;
+}
+.how-title{
+  text-align:center;
+  font-size:clamp(1.5rem,4vw,2.2rem);
+  font-weight:800;
+  margin-bottom:2.5rem;
+}
+.step{
+  display:flex;gap:1rem;
+  margin-bottom:2rem;
+  align-items:flex-start;
+}
+.step-num{
+  font-family:var(--mono);
+  font-size:1.1rem;font-weight:700;
+  color:var(--accent);
+  background:var(--accent-glow);
+  width:36px;height:36px;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.step-text h4{font-size:.95rem;font-weight:600;margin-bottom:.2rem}
+.step-text p{font-size:.85rem;color:var(--text-2)}
+
+/* ═══ FORM SECTION ═══ */
+.form-section{
+  padding:4rem 1.5rem 5rem;
+  max-width:480px;
+  margin:0 auto;
+}
+.form-section-title{
+  text-align:center;
+  font-size:clamp(1.4rem,4vw,2rem);
+  font-weight:800;
+  margin-bottom:.5rem;
+}
+.form-section-sub{
+  text-align:center;
+  color:var(--text-2);
+  font-size:.9rem;
+  margin-bottom:2rem;
+}
+
+.form-card{
+  background:var(--surface);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--radius);
+  padding:2rem 1.5rem;
+}
+
+.field{margin-bottom:1.2rem}
+.field label{
+  display:block;
+  font-size:.8rem;
+  font-weight:600;
+  color:var(--text-2);
+  margin-bottom:.4rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.field input,.field select{
+  width:100%;
+  padding:.75rem 1rem;
+  background:var(--surface-2);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;
+  color:var(--text);
+  font-family:var(--font);
+  font-size:.95rem;
+  outline:none;
+  transition:border-color .2s;
+  -webkit-appearance:none;
+}
+.field input::placeholder{color:var(--text-3)}
+.field input:focus,.field select:focus{
+  border-color:var(--accent);
+}
+.field select{
+  cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2371717a' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 1rem center;
+  padding-right:2.5rem;
+}
+.field select option{
+  background:var(--surface-2);
+  color:var(--text);
+}
+
+.submit-btn{
+  width:100%;
+  padding:.85rem;
+  background:var(--accent);
+  color:var(--bg);
+  font-family:var(--font);
+  font-size:1rem;
+  font-weight:700;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  transition:all .2s;
+  margin-top:.5rem;
+}
+.submit-btn:hover{
+  background:var(--accent-dim);
+  box-shadow:0 4px 20px rgba(74,222,128,.3);
+}
+.submit-btn:disabled{
+  opacity:.6;cursor:not-allowed;
+}
+
+.form-note{
+  text-align:center;
+  font-size:.75rem;
+  color:var(--text-3);
+  margin-top:1rem;
+}
+
+/* ═══ SUCCESS STATE ═══ */
+.success-msg{
+  text-align:center;
+  padding:2rem 1rem;
+  display:none;
+}
+.success-msg .check{
+  width:56px;height:56px;
+  background:var(--accent-glow);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 1rem;
+  color:var(--accent);
+  font-size:1.5rem;
+}
+.success-msg h3{
+  font-size:1.2rem;font-weight:700;
+  margin-bottom:.5rem;
+}
+.success-msg p{
+  font-size:.9rem;color:var(--text-2);
+}
+
+/* ═══ FOOTER ═══ */
+footer{
+  text-align:center;
+  padding:3rem 1.5rem;
+  font-size:.75rem;
+  color:var(--text-3);
+  border-top:1px solid rgba(255,255,255,.04);
+}
+footer a{color:var(--text-2);text-decoration:none}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.reveal{opacity:0;transform:translateY(30px);transition:all .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:480px){
+  .hero{padding:1.5rem 1.2rem}
+  .countdown-item{min-width:54px;padding:.5rem .6rem}
+  .countdown-item .num{font-size:1.3rem}
+  .form-card{padding:1.5rem 1.2rem}
+  .features-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="badge">
+    <span class="badge-dot"></span>
+    Acceso anticipado — cupos limitados
+  </div>
+  
+  <h1>Sabe cuánto<br>necesitas para<br><span class="accent">aprobar.</span></h1>
+  
+  <p class="hero-sub">Calculadora de notas, simulador de exámenes y gestión académica para universitarios chilenos.</p>
+  
+  <p class="hero-scale">Escala <span>1.0</span> — <span>7.0</span> · Gratis para siempre</p>
+  
+  <div class="countdown-wrap">
+    <div class="countdown-label">Lanzamiento en</div>
+    <div class="countdown">
+      <div class="countdown-item"><span class="num" id="cd-days">00</span><span class="unit">Días</span></div>
+      <div class="countdown-item"><span class="num" id="cd-hours">00</span><span class="unit">Horas</span></div>
+      <div class="countdown-item"><span class="num" id="cd-mins">00</span><span class="unit">Min</span></div>
+      <div class="countdown-item"><span class="num" id="cd-secs">00</span><span class="unit">Seg</span></div>
+    </div>
+  </div>
+  
+  <a href="#registro" class="cta-btn">
+    Quiero acceso anticipado
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  </a>
+</section>
+
+<!-- ═══ FEATURES ═══ -->
+<section class="features reveal">
+  <h2 class="features-title">Todo lo que necesitas en un solo lugar</h2>
+  <p class="features-sub">Deja de andar con Excels, calculadoras y cuadernos sueltos.</p>
+  
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Calculadora instantánea</h3>
+      <p>Ingresa tus notas con ponderaciones y obtén tu promedio al toque. Escala chilena 1.0–7.0.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>Simulador "¿Cuánto necesito?"</h3>
+      <p>Sabe exactamente qué nota necesitas en el certamen o examen para aprobar o eximirte.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>Gestión de ramos</h3>
+      <p>Organiza todos tus ramos por semestre con sus evaluaciones, sub-notas y ponderaciones.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <h3>Horario semanal</h3>
+      <p>Visualiza tu horario completo desde el celular. Siempre a mano, siempre actualizado.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Dashboard personal</h3>
+      <p>Ve tu situación académica de un vistazo: promedios, alertas de riesgo y proyecciones.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">☁️</div>
+      <h3>Tu historial completo</h3>
+      <p>Notazo recuerda todo. Tu trayectoria semestre a semestre, siempre disponible.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section class="how reveal">
+  <h2 class="how-title">Así de fácil</h2>
+  
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <h4>Entra con tu Google</h4>
+      <p>Un clic y listo. Sin contraseñas ni formularios largos.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <h4>Agrega tus ramos</h4>
+      <p>Configura tus ramos del semestre con sus evaluaciones y ponderaciones.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <h4>Simula y planifica</h4>
+      <p>Calcula qué necesitas para aprobar, eximirte, o sacar un notazo.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FORM ═══ -->
+<section class="form-section reveal" id="registro">
+  <h2 class="form-section-title">Regístrate para acceso anticipado</h2>
+  <p class="form-section-sub">Los primeros 200 registrados obtienen Premium gratis por un semestre completo.</p>
+  
+  <div class="form-card">
+    <form id="signup-form">
+      <div class="field">
+        <label for="name">Nombre</label>
+        <input type="text" id="name" name="nombre" placeholder="Tu nombre" required>
+      </div>
+      <div class="field">
+        <label for="email">Correo</label>
+        <input type="email" id="email" name="correo" placeholder="tu@correo.com" required>
+      </div>
+      <div class="field">
+        <label for="university">Universidad</label>
+        <select id="university" name="universidad" required>
+          <option value="" disabled selected>Selecciona tu universidad</option>
+          <option value="usach">Universidad de Santiago de Chile</option>
+          <option value="uchile">Universidad de Chile</option>
+          <option value="puc">Pontificia Universidad Católica</option>
+          <option value="udec">Universidad de Concepción</option>
+          <option value="utfsm">Universidad Técnica Federico Santa María</option>
+          <option value="ubb">Universidad del Bío-Bío</option>
+          <option value="utal">Universidad de Talca</option>
+          <option value="uv">Universidad de Valparaíso</option>
+          <option value="udp">Universidad Diego Portales</option>
+          <option value="uai">Universidad Adolfo Ibáñez</option>
+          <option value="uandes">Universidad de los Andes</option>
+          <option value="unab">Universidad Andrés Bello</option>
+          <option value="uss">Universidad San Sebastián</option>
+          <option value="umayor">Universidad Mayor</option>
+          <option value="uach">Universidad Austral de Chile</option>
+          <option value="ucn">Universidad Católica del Norte</option>
+          <option value="ufro">Universidad de la Frontera</option>
+          <option value="umag">Universidad de Magallanes</option>
+          <option value="ulagos">Universidad de Los Lagos</option>
+          <option value="ucsc">Universidad Católica de la Santísima Concepción</option>
+          <option value="ucm">Universidad Católica del Maule</option>
+          <option value="uct">Universidad Católica de Temuco</option>
+          <option value="upla">Universidad de Playa Ancha</option>
+          <option value="otra">Otra</option>
+        </select>
+      </div>
+      <button type="submit" class="submit-btn" id="submit-btn">Reservar mi lugar</button>
+    </form>
+    
+    <div class="success-msg" id="success-msg">
+      <div class="check">✓</div>
+      <h3>¡Estás dentro!</h3>
+      <p>Te avisaremos apenas Notazo esté listo. Revisa tu correo.</p>
+    </div>
+    
+    <p class="form-note">Sin spam. Solo te avisamos cuando lancemos.</p>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <p>© 2026 Notazo · Hecho en Chile 🇨🇱</p>
+</footer>
+
+<script>
+// ═══ COUNTDOWN ═══
+// Set launch date to 10 days from now (adjust this to your real launch date)
+const launchDate = new Date();
+launchDate.setDate(launchDate.getDate() + 10);
+launchDate.setHours(23, 59, 59, 0);
+
+function updateCountdown() {
+  const now = new Date();
+  const diff = launchDate - now;
+  
+  if (diff <= 0) {
+    document.querySelectorAll('.num').forEach(el => el.textContent = '00');
+    return;
+  }
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const secs = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  document.getElementById('cd-days').textContent = String(days).padStart(2, '0');
+  document.getElementById('cd-hours').textContent = String(hours).padStart(2, '0');
+  document.getElementById('cd-mins').textContent = String(mins).padStart(2, '0');
+  document.getElementById('cd-secs').textContent = String(secs).padStart(2, '0');
+}
+
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
+// ═══ FORM SUBMISSION → GOOGLE SHEETS ═══
+document.getElementById('signup-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const btn = document.getElementById('submit-btn');
+  const form = this;
+  
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  
+  const data = {
+    nombre: document.getElementById('name').value,
+    correo: document.getElementById('email').value,
+    universidad: document.getElementById('university').value,
+    fecha: new Date().toISOString()
+  };
+  
+  // ══════════════════════════════════════════════════════
+  // IMPORTANTE: Reemplaza esta URL con tu Google Apps Script
+  // Sigue estos pasos:
+  // 1. Crea un Google Sheet con columnas: nombre, correo, universidad, fecha
+  // 2. Ve a Extensiones > Apps Script
+  // 3. Pega el código del archivo google-apps-script.js
+  // 4. Implementa como "Aplicación web" (acceso: cualquiera)
+  // 5. Copia la URL y reemplázala aquí abajo
+  // ══════════════════════════════════════════════════════
+  const GOOGLE_SCRIPT_URL = 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI';
+  
+  try {
+    if (GOOGLE_SCRIPT_URL !== 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    
+    // Show success
+    form.style.display = 'none';
+    document.getElementById('success-msg').style.display = 'block';
+    document.querySelector('.form-note').style.display = 'none';
+    
+  } catch (err) {
+    // Still show success (no-cors doesn't return readable response)
+    form.style.display = 'none';
+    document.getElementById('success-msg').style.display = 'block';
+    document.querySelector('.form-note').style.display = 'none';
+  }
+});
+
+// ═══ SCROLL REVEAL ═══
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
